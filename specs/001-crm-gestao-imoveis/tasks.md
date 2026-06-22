@@ -135,14 +135,14 @@ e **validações** (Princípio III).
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T054 [P] Dashboard (próximas datas + pendências financeiras) em `app/(app)/dashboard/page.tsx`
-- [ ] T055 [P] Estados de vazio/carregamento/erro em listas e painéis
-- [ ] T056 [P] Testes e2e dos fluxos P1 em `tests/e2e/p1-flows.spec.ts`
-- [ ] T057 [P] Revisão de segurança: RLS, `security_invoker` das views e políticas de Storage
-- [ ] T058 [P] Acessibilidade e responsividade (design system)
-- [ ] T059 [P] Tela de auditoria (consulta de `audit_log`) em `app/(app)/auditoria/page.tsx`  *(visibilidade do H2)*
-- [ ] T060 Rodar a validação do [quickstart.md](quickstart.md), incluindo as metas de UX **SC-005** (tempos de cadastro) e **SC-006** (status de pagamento em ≤ 3 cliques) como aceite manual  *(corrige G3)*
-- [ ] T061 [P] README + documentação de deploy na Vercel
+- [x] T054 [P] Dashboard (contadores + pendências financeiras; próximas datas via modal de alertas) em `app/(app)/dashboard/`
+- [x] T055 [P] Estados de vazio (`EmptyState`) + `loading.tsx` + `error.tsx`
+- [ ] T056 [P] Testes e2e dos fluxos P1 em `tests/e2e/p1-flows.spec.ts` *(diferido — requer usuário de auth + servidor)*
+- [x] T057 [P] Revisão de segurança (advisors): RLS ativa, `security_invoker` nas views, Storage restrito, funções endurecidas
+- [x] T058 [P] Acessibilidade e responsividade básicas (labels, grids responsivos, semântica)
+- [x] T059 [P] Tela de auditoria (consulta de `audit_log`) em `app/(app)/auditoria/page.tsx`  *(visibilidade do H2)*
+- [ ] T060 Validação manual do [quickstart.md](quickstart.md) + metas de UX SC-005/SC-006 *(aceite manual — quando você testar)*
+- [x] T061 [P] README + documentação de deploy na Vercel + `proxy.ts` (fim da deprecação) + `git init`
 
 ---
 

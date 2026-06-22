@@ -33,11 +33,35 @@ export function validarArquivo(file: { type: string; size: number }): {
   return { ok: true };
 }
 
+/**
+ * Sanitiza um nome de arquivo para uso como "key" no Storage:
+ * decompõe acentos (NFD), remove tudo que não é ASCII (as marcas de acento somem,
+ * sobra a letra base) e troca espaços/símbolos por "_", mantendo só [a-zA-Z0-9._-].
+ * (O Supabase Storage rejeita keys com acentos/espaços — ex.: "PROCURAÇÃO X5.doc".)
+ */
+export function sanitizeFileName(fileName: string): string {
+  const dot = fileName.lastIndexOf(".");
+  const base = dot > 0 ? fileName.slice(0, dot) : fileName;
+  const ext = dot > 0 ? fileName.slice(dot) : "";
+
+  const limpar = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[^\x00-\x7F]/g, "") // remove não-ASCII (marcas de acento, etc.)
+      .replace(/[^a-zA-Z0-9._-]+/g, "_") // espaços/símbolos viram "_"
+      .replace(/_+/g, "_")
+      .replace(/^[_.-]+|[_.-]+$/g, "");
+
+  const baseLimpa = limpar(base) || "arquivo";
+  const extLimpa = limpar(ext).toLowerCase();
+  return extLimpa ? `${baseLimpa}.${extLimpa}` : baseLimpa;
+}
+
 /** Monta o caminho de armazenamento no bucket: entityType/entityId/timestamp-nome. */
 export function storagePath(
   entityType: Enums<"entidade_arquivo">,
   entityId: string,
   fileName: string,
 ): string {
-  return `${entityType}/${entityId}/${Date.now()}-${fileName}`;
+  return `${entityType}/${entityId}/${Date.now()}-${sanitizeFileName(fileName)}`;
 }
