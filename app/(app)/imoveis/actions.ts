@@ -37,5 +37,13 @@ export async function arquivarImovel(id: string): Promise<void> {
   const supabase = await createClient();
   await supabase.from("imoveis").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   revalidatePath("/imoveis");
+  // Vai para a aba de arquivados para o usuário ver onde o imóvel foi parar (e poder restaurar).
+  redirect("/imoveis?arquivados=1");
+}
+
+export async function desarquivarImovel(id: string): Promise<void> {
+  const supabase = await createClient();
+  await supabase.from("imoveis").update({ deleted_at: null }).eq("id", id);
+  revalidatePath("/imoveis");
   redirect("/imoveis");
 }

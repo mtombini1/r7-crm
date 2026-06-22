@@ -2,29 +2,31 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/domain/page-header";
 import { EmptyState } from "@/components/domain/empty-state";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatDate } from "@/lib/utils/format";
+import { formatDateTime } from "@/lib/utils/format";
 
-const acaoVariant = {
-  insert: "success",
-  update: "warning",
-  delete: "destructive",
-} as const;
+type Variante = "success" | "warning" | "destructive" | "muted";
 
-const acaoLabel = { insert: "Criou", update: "Alterou", delete: "Removeu" } as const;
+const ENTIDADE: Record<string, { artigo: string; nome: string }> = {
+  imoveis: { artigo: "um", nome: "imóvel" },
+  inquilinos: { artigo: "um", nome: "inquilino" },
+  locacoes: { artigo: "uma", nome: "locação" },
+  lancamentos_financeiros: { artigo: "um", nome: "lançamento financeiro" },
+  arquivos: { artigo: "um", nome: "documento" },
+  alertas_reconhecimentos: { artigo: "um", nome: "alerta" },
+  profiles: { artigo: "um", nome: "perfil" },
+};
+
+const ACAO: Record<string, { label: string; variant: Variante }> = {
+  insert: { label: "Criou", variant: "success" },
+  update: { label: "Atualizou", variant: "warning" },
+  delete: { label: "Removeu", variant: "destructive" },
+};
 
 export default async function AuditoriaPage() {
   const supabase = await createClient();
   const { data: logs } = await supabase
     .from("audit_log")
-    .select("id, em, tabela, acao, registro_id")
+    .select("id, em, tabela, acao")
     .order("em", { ascending: false })
     .limit(100);
 
@@ -32,35 +34,37 @@ export default async function AuditoriaPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Auditoria"
-        description="Histórico de alterações (quem, quando, o quê) — últimos 100 eventos"
+        description="Histórico de tudo que mudou no sistema — quem fez, o quê e quando (últimos 100 eventos)."
       />
+
       {!logs?.length ? (
-        <EmptyState title="Nenhum evento registrado ainda" />
+        <EmptyState
+          title="Nenhuma atividade ainda"
+          description="As alterações em imóveis, inquilinos, locações e documentos aparecerão aqui."
+        />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Ação</TableHead>
-              <TableHead>Tabela</TableHead>
-              <TableHead>Registro</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {logs.map((log) => (
-              <TableRow key={log.id}>
-                <TableCell className="text-muted-foreground">{formatDate(log.em)}</TableCell>
-                <TableCell>
-                  <Badge variant={acaoVariant[log.acao]}>{acaoLabel[log.acao]}</Badge>
-                </TableCell>
-                <TableCell>{log.tabela}</TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
-                  {log.registro_id?.slice(0, 8) ?? "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+          {logs.map((log) => {
+            const ent = ENTIDADE[log.tabela] ?? { artigo: "um", nome: log.tabela };
+            const ac = ACAO[log.acao] ?? { label: log.acao, variant: "muted" as Variante };
+            return (
+              <li
+                key={log.id}
+                className="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-center gap-3">
+                  <Badge variant={ac.variant}>{ac.label}</Badge>
+                  <span className="text-sm">
+                    {ent.artigo} <span className="font-medium">{ent.nome}</span>
+                  </span>
+                </div>
+                <time className="shrink-0 text-xs text-muted-foreground">
+                  {formatDateTime(log.em)}
+                </time>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

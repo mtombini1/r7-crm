@@ -14,6 +14,12 @@ export function formatDate(date: string | Date | null | undefined): string {
   return formatInTimeZone(new Date(date), TZ, "dd/MM/yyyy");
 }
 
+/** Formata data e hora (dd/MM/yyyy 'às' HH:mm) no fuso de São Paulo. */
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  return formatInTimeZone(new Date(date), TZ, "dd/MM/yyyy 'às' HH:mm");
+}
+
 /** Data atual (yyyy-MM-dd) no fuso America/Sao_Paulo. */
 export function hojeISO(): string {
   return formatInTimeZone(new Date(), TZ, "yyyy-MM-dd");

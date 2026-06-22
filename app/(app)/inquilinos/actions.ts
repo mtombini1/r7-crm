@@ -37,5 +37,12 @@ export async function arquivarInquilino(id: string): Promise<void> {
   const supabase = await createClient();
   await supabase.from("inquilinos").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   revalidatePath("/inquilinos");
+  redirect("/inquilinos?arquivados=1");
+}
+
+export async function desarquivarInquilino(id: string): Promise<void> {
+  const supabase = await createClient();
+  await supabase.from("inquilinos").update({ deleted_at: null }).eq("id", id);
+  revalidatePath("/inquilinos");
   redirect("/inquilinos");
 }
