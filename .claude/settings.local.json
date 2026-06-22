@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($tools = @\\(\"git\",\"python\",\"python3\",\"py\",\"uv\",\"uvx\",\"node\",\"npm\"\\); foreach \\($t in $tools\\) { $c = Get-Command $t -ErrorAction SilentlyContinue; if \\($c\\) { \"{0,-10} {1}\" -f $t, $c.Source } else { \"{0,-10} NOT FOUND\" -f $t } })",
+      "PowerShell(python --version; Write-Output \"---exit: $LASTEXITCODE---\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "PowerShell(Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; irm https://astral.sh/uv/install.ps1 | iex)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl -s \"https://registry.npmjs.org/@supabase/mcp-server-supabase/latest\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(curl -s \"https://raw.githubusercontent.com/supabase/mcp/main/packages/mcp-server-supabase/README.md\")",
+      "Bash(curl -s \"https://registry.npmjs.org/@supabase/mcp-server-supabase/0.8.2\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('readme len:', len\\(d.get\\('readme',''\\)\\)\\); print\\(d.get\\('readme',''\\)[:6000]\\)\")",
+      "Bash(node -e \"const d=require\\('/tmp/sup.json'\\); const r=d.readme||''; console.log\\('README length:', r.length\\); const lines=r.split\\('\\\\n'\\); for\\(const l of lines\\){ if\\(/npx|--read-only|--project-ref|SUPABASE_ACCESS_TOKEN|cmd \\\\/c|mcp.supabase.com|access token|claude/i.test\\(l\\)\\) console.log\\(l\\); }\")",
+      "PowerShell($d = Invoke-RestMethod \"https://registry.npmjs.org/@supabase/mcp-server-supabase/0.8.2\"; $r = $d.readme; Write-Output \\(\"README length: \" + $r.Length\\); $r -split \"`n\" | Where-Object { $_ -match 'npx|--read-only|--project-ref|SUPABASE_ACCESS_TOKEN|cmd /c|mcp.supabase.com|access token|claude|\"command\"|\"args\"|\"env\"' })",
+      "PowerShell(winget install OpenJS.NodeJS.LTS --silent --accept-source-agreements --accept-package-agreements)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__generate_typescript_types",
+      "mcp__supabase__get_advisors",
+      "Bash(npx tsc *)",
+      "Bash(tee /tmp/tsc.log)",
+      "Read(//tmp/**)",
+      "Bash(npx vitest *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}
