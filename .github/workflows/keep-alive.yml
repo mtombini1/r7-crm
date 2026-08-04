@@ -1,0 +1,30 @@
+name: Keep Supabase Alive
+
+# Mantém o projeto Supabase (plano free) ativo, evitando a pausa automática
+# por ~7 dias de inatividade. Faz uma consulta leve ao banco 2x por semana.
+
+on:
+  schedule:
+    - cron: "0 12 * * 1,4" # segunda e quinta, 12:00 UTC (folga confortável dos 7 dias)
+  workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pingar Supabase (consulta leve)
+        run: |
+          # A anon key abaixo é PÚBLICA (a mesma enviada ao navegador pelo app) —
+          # NÃO é a service_role. Seguro versionar. Só serve para uma consulta com RLS.
+          URL="https://dlbkeajhcipprodxrsrx.supabase.co"
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsYmtlYWpoY2lwcHJvZHhyc3J4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNjQxMjMsImV4cCI6MjA5NzY0MDEyM30.DhCTTshiQKgfkltZxgOTNhMLt35nv1Cglo1cVgESy3o"
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$URL/rest/v1/imoveis?select=id&limit=1" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          echo "Supabase respondeu HTTP $code"
+          # Considera saudável qualquer resposta do projeto (200/206/401 etc.).
+          # Falha só se não respondeu (000) ou erro de servidor (5xx).
+          if [ -z "$code" ] || [ "$code" = "000" ] || [ "$code" -ge 500 ]; then
+            echo "::error::Supabase não respondeu corretamente (HTTP $code)"
+            exit 1
+          fi
