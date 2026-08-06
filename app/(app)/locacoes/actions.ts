@@ -44,6 +44,21 @@ export async function encerrarLocacao(id: string): Promise<void> {
   redirect("/locacoes");
 }
 
+/** "Excluir" da lista: soft-delete (preserva histórico/arquivos; restaurável). */
+export async function arquivarLocacao(id: string): Promise<void> {
+  const supabase = await createClient();
+  await supabase.from("locacoes").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/locacoes");
+  redirect("/locacoes?filtro=excluidas");
+}
+
+export async function desarquivarLocacao(id: string): Promise<void> {
+  const supabase = await createClient();
+  await supabase.from("locacoes").update({ deleted_at: null }).eq("id", id);
+  revalidatePath("/locacoes");
+  redirect("/locacoes");
+}
+
 /**
  * Reconhece um alerta de reajuste: registra o reconhecimento com o novo valor
  * e atualiza o valor do aluguel da locação. `reconhecido_por` é preenchido pelo
