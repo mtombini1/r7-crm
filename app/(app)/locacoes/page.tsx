@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/domain/page-header";
 import { EmptyState } from "@/components/domain/empty-state";
@@ -152,8 +153,15 @@ export default async function LocacoesPage({
                         await arquivarLocacao(loc.id);
                       }}
                     >
-                      <Button type="submit" variant="destructive" size="sm">
-                        Excluir
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        aria-label="Excluir locação"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </form>
                   )}
