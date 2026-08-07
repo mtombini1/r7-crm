@@ -170,6 +170,15 @@ export default async function InquilinoDetailPage({ params }: { params: Promise<
           </CardContent>
         </Card>
       </div>
+
+      {inquilino.observacoes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Observações</CardTitle>
+          </CardHeader>
+          <CardContent className="whitespace-pre-wrap text-sm">{inquilino.observacoes}</CardContent>
+        </Card>
+      )}
     </div>
   );
 }

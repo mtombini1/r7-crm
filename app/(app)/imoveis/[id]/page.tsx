@@ -160,6 +160,28 @@ export default async function ImovelDetailPage({ params }: { params: Promise<{ i
 
         <Card>
           <CardHeader>
+            <CardTitle>Vaga de garagem</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm">
+            {imovel.tem_vaga ? (
+              <div className="grid grid-cols-2 gap-y-2">
+                <span className="text-muted-foreground">Quantidade</span>
+                <span className="text-right">{imovel.vaga_quantidade ?? "—"}</span>
+                <span className="text-muted-foreground">Matrícula</span>
+                <span className="text-right">{imovel.vaga_matricula || "—"}</span>
+                <span className="text-muted-foreground">Inscrição imob.</span>
+                <span className="text-right">{imovel.vaga_inscricao_imobiliaria || "—"}</span>
+                <span className="text-muted-foreground">DIC</span>
+                <span className="text-right">{imovel.vaga_dic || "—"}</span>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Sem vaga de garagem.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Arquivos</CardTitle>
           </CardHeader>
           <CardContent>
@@ -167,6 +189,15 @@ export default async function ImovelDetailPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       </div>
+
+      {imovel.observacoes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Observações</CardTitle>
+          </CardHeader>
+          <CardContent className="whitespace-pre-wrap text-sm">{imovel.observacoes}</CardContent>
+        </Card>
+      )}
     </div>
   );
 }

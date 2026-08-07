@@ -16,6 +16,7 @@ export const locacaoSchema = z.object({
     .max(28, "Dia de vencimento entre 1 e 28")
     .nullable()
     .optional(),
+  observacoes: z.string().trim().nullable().optional(),
 });
 
 export type LocacaoData = z.infer<typeof locacaoSchema>;

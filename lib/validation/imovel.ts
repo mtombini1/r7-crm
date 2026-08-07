@@ -10,6 +10,12 @@ export const imovelSchema = z.object({
   doc_ambiental: z.boolean().optional().default(false),
   doc_iptu: z.boolean().optional().default(false),
   doc_condominio: z.boolean().optional().default(false),
+  observacoes: z.string().trim().nullable().optional(),
+  tem_vaga: z.boolean().optional().default(false),
+  vaga_quantidade: z.coerce.number().int().nonnegative("Quantidade inválida").nullable().optional(),
+  vaga_matricula: z.string().trim().nullable().optional(),
+  vaga_inscricao_imobiliaria: z.string().trim().nullable().optional(),
+  vaga_dic: z.string().trim().nullable().optional(),
 });
 
 export type ImovelData = z.infer<typeof imovelSchema>;

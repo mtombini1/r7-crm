@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Values = {
@@ -24,6 +25,7 @@ type Values = {
   fiador_nome: string;
   fiador_email: string;
   fiador_telefone: string;
+  observacoes: string;
 };
 
 export function InquilinoForm({ inquilino }: { inquilino?: Tables<"inquilinos"> }) {
@@ -46,6 +48,7 @@ export function InquilinoForm({ inquilino }: { inquilino?: Tables<"inquilinos"> 
       fiador_nome: inquilino?.fiador_nome ?? "",
       fiador_email: inquilino?.fiador_email ?? "",
       fiador_telefone: inquilino?.fiador_telefone ?? "",
+      observacoes: inquilino?.observacoes ?? "",
     },
   });
 
@@ -64,6 +67,7 @@ export function InquilinoForm({ inquilino }: { inquilino?: Tables<"inquilinos"> 
       fiador_nome: v.fiador_nome === "" ? null : v.fiador_nome,
       fiador_email: v.fiador_email === "" ? null : v.fiador_email,
       fiador_telefone: v.fiador_telefone === "" ? null : v.fiador_telefone,
+      observacoes: v.observacoes === "" ? null : v.observacoes,
     };
     const res = inquilino
       ? await atualizarInquilino(inquilino.id, payload)
@@ -136,6 +140,18 @@ export function InquilinoForm({ inquilino }: { inquilino?: Tables<"inquilinos"> 
             <Label htmlFor="fiador_telefone">Telefone do fiador</Label>
             <Input id="fiador_telefone" {...register("fiador_telefone")} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-1.5 pt-6">
+          <Label htmlFor="observacoes">Observações</Label>
+          <Textarea
+            id="observacoes"
+            rows={4}
+            placeholder="Informações complementares sobre o inquilino..."
+            {...register("observacoes")}
+          />
         </CardContent>
       </Card>
 

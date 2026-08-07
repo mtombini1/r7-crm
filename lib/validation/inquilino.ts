@@ -15,6 +15,7 @@ export const inquilinoSchema = z
     fiador_nome: z.string().trim().nullable().optional(),
     fiador_email: z.string().trim().nullable().optional(),
     fiador_telefone: z.string().trim().nullable().optional(),
+    observacoes: z.string().trim().nullable().optional(),
   })
   .refine((d) => validarCpfCnpj(d.cpf_cnpj, d.tipo), {
     message: "CPF/CNPJ inválido",

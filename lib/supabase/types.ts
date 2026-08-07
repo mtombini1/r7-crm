@@ -112,6 +112,12 @@ export type Database = {
           inscricao_imobiliaria: string | null;
           matricula: string | null;
           metragem_m2: number | null;
+          observacoes: string | null;
+          tem_vaga: boolean;
+          vaga_dic: string | null;
+          vaga_inscricao_imobiliaria: string | null;
+          vaga_matricula: string | null;
+          vaga_quantidade: number | null;
           nome: string;
           status: Database["public"]["Enums"]["imovel_status"];
           updated_at: string;
@@ -131,6 +137,12 @@ export type Database = {
           inscricao_imobiliaria?: string | null;
           matricula?: string | null;
           metragem_m2?: number | null;
+          observacoes?: string | null;
+          tem_vaga?: boolean;
+          vaga_dic?: string | null;
+          vaga_inscricao_imobiliaria?: string | null;
+          vaga_matricula?: string | null;
+          vaga_quantidade?: number | null;
           status?: Database["public"]["Enums"]["imovel_status"];
           updated_at?: string;
           updated_by?: string | null;
@@ -152,6 +164,7 @@ export type Database = {
           fiador_telefone: string | null;
           id: string;
           nome: string;
+          observacoes: string | null;
           responsavel: string | null;
           rg: string | null;
           telefone: string | null;
@@ -173,6 +186,7 @@ export type Database = {
           fiador_nome?: string | null;
           fiador_telefone?: string | null;
           id?: string;
+          observacoes?: string | null;
           responsavel?: string | null;
           rg?: string | null;
           telefone?: string | null;
@@ -255,6 +269,7 @@ export type Database = {
           imovel_id: string;
           indice_correcao: string | null;
           inquilino_id: string;
+          observacoes: string | null;
           status: Database["public"]["Enums"]["locacao_status"];
           updated_at: string;
           updated_by: string | null;
@@ -271,6 +286,7 @@ export type Database = {
           data_reajuste?: string | null;
           data_renovacao?: string | null;
           data_troca_desconto?: string | null;
+          observacoes?: string | null;
           deleted_at?: string | null;
           dia_vencimento?: number | null;
           id?: string;

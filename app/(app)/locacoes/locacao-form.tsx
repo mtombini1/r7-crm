@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Values = {
@@ -21,6 +22,7 @@ type Values = {
   data_troca_desconto: string;
   indice_correcao: string;
   dia_vencimento: string;
+  observacoes: string;
 };
 
 export function LocacaoForm({
@@ -48,6 +50,7 @@ export function LocacaoForm({
       data_troca_desconto: locacao?.data_troca_desconto ?? "",
       indice_correcao: locacao?.indice_correcao ?? "",
       dia_vencimento: locacao?.dia_vencimento?.toString() ?? "",
+      observacoes: locacao?.observacoes ?? "",
     },
   });
 
@@ -63,6 +66,7 @@ export function LocacaoForm({
       data_troca_desconto: v.data_troca_desconto === "" ? null : v.data_troca_desconto,
       indice_correcao: v.indice_correcao === "" ? null : v.indice_correcao,
       dia_vencimento: v.dia_vencimento === "" ? null : Number(v.dia_vencimento),
+      observacoes: v.observacoes === "" ? null : v.observacoes,
     };
     const res = locacao
       ? await atualizarLocacao(locacao.id, payload)
@@ -155,6 +159,18 @@ export function LocacaoForm({
             <Label htmlFor="indice_correcao">Índice de correção</Label>
             <Input id="indice_correcao" {...register("indice_correcao")} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-1.5 pt-6">
+          <Label htmlFor="observacoes">Observações</Label>
+          <Textarea
+            id="observacoes"
+            rows={4}
+            placeholder="Informações complementares sobre a locação..."
+            {...register("observacoes")}
+          />
         </CardContent>
       </Card>
 

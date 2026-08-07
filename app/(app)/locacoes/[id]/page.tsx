@@ -157,6 +157,15 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       </div>
+
+      {locacao.observacoes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Observações</CardTitle>
+          </CardHeader>
+          <CardContent className="whitespace-pre-wrap text-sm">{locacao.observacoes}</CardContent>
+        </Card>
+      )}
     </div>
   );
 }
