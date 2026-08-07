@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { normalizarBusca, correspondeBusca } from "@/lib/utils/search";
 import { desarquivarInquilino } from "./actions";
 
 export default async function InquilinosPage({
@@ -26,11 +27,25 @@ export default async function InquilinosPage({
   const supabase = await createClient();
 
   let query = supabase.from("inquilinos").select("*").order("nome");
-  query = vendoArquivados
-    ? query.not("deleted_at", "is", null)
-    : query.is("deleted_at", null);
-  if (q) query = query.ilike("nome", `%${q}%`);
-  const { data: inquilinos } = await query;
+  query = vendoArquivados ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
+  const { data } = await query;
+
+  const termo = normalizarBusca(q ?? "");
+  const inquilinos = (data ?? []).filter((inq) =>
+    correspondeBusca(termo, [
+      inq.nome,
+      inq.cpf_cnpj,
+      inq.rg,
+      inq.email,
+      inq.telefone,
+      inq.responsavel,
+      inq.endereco,
+      inq.fiador_nome,
+      inq.fiador_email,
+      inq.fiador_telefone,
+      inq.tipo === "pj" ? "pj pessoa juridica" : "pf pessoa fisica",
+    ]),
+  );
 
   const aba = (ativo: boolean) =>
     cn(
@@ -66,18 +81,20 @@ export default async function InquilinosPage({
         <Input
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Buscar por nome..."
-          className="max-w-xs"
+          placeholder="Buscar por nome, CPF/CNPJ, telefone, e-mail, fiador..."
+          className="max-w-md"
         />
       </form>
 
-      {!inquilinos?.length ? (
+      {!inquilinos.length ? (
         <EmptyState
-          title={vendoArquivados ? "Nenhum inquilino arquivado" : "Nenhum inquilino encontrado"}
+          title={termo ? "Nenhum resultado" : vendoArquivados ? "Nenhum inquilino arquivado" : "Nenhum inquilino encontrado"}
           description={
-            vendoArquivados
-              ? "Inquilinos que você arquivar aparecem aqui e podem ser restaurados."
-              : "Comece cadastrando o primeiro inquilino."
+            termo
+              ? `Nada encontrado para "${q}". Tente outro termo.`
+              : vendoArquivados
+                ? "Inquilinos que você arquivar aparecem aqui e podem ser restaurados."
+                : "Comece cadastrando o primeiro inquilino."
           }
         />
       ) : (

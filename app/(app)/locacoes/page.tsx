@@ -4,9 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/domain/page-header";
 import { EmptyState } from "@/components/domain/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL, formatDate } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
+import { normalizarBusca, correspondeBusca } from "@/lib/utils/search";
 import {
   Table,
   TableBody,
@@ -22,9 +24,9 @@ type Filtro = "ativas" | "encerradas" | "excluidas";
 export default async function LocacoesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filtro?: string }>;
+  searchParams: Promise<{ filtro?: string; q?: string }>;
 }) {
-  const { filtro: raw } = await searchParams;
+  const { filtro: raw, q } = await searchParams;
   const filtro: Filtro =
     raw === "encerradas" ? "encerradas" : raw === "excluidas" ? "excluidas" : "ativas";
   const excluidas = filtro === "excluidas";
@@ -35,10 +37,10 @@ export default async function LocacoesPage({
   if (filtro === "excluidas") query = query.not("deleted_at", "is", null);
   else if (filtro === "encerradas") query = query.eq("status", "encerrada").is("deleted_at", null);
   else query = query.eq("status", "ativa").is("deleted_at", null);
-  const { data: locacoes } = await query;
+  const { data } = await query;
 
-  const imovelIds = [...new Set((locacoes ?? []).map((l) => l.imovel_id))];
-  const inquilinoIds = [...new Set((locacoes ?? []).map((l) => l.inquilino_id))];
+  const imovelIds = [...new Set((data ?? []).map((l) => l.imovel_id))];
+  const inquilinoIds = [...new Set((data ?? []).map((l) => l.inquilino_id))];
 
   const [{ data: imoveis }, { data: inquilinos }] = await Promise.all([
     imovelIds.length
@@ -52,20 +54,24 @@ export default async function LocacoesPage({
   const imovelById = new Map((imoveis ?? []).map((im) => [im.id, im.nome]));
   const inquilinoById = new Map((inquilinos ?? []).map((iq) => [iq.id, iq.nome]));
 
+  const termo = normalizarBusca(q ?? "");
+  const locacoes = (data ?? []).filter((l) =>
+    correspondeBusca(termo, [
+      imovelById.get(l.imovel_id),
+      inquilinoById.get(l.inquilino_id),
+      l.valor_aluguel,
+      l.indice_correcao,
+      l.data_reajuste,
+      l.data_renovacao,
+      l.status === "ativa" ? "ativa" : "encerrada",
+    ]),
+  );
+
   const aba = (ativo: boolean) =>
     cn(
       "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
       ativo ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:bg-accent",
     );
-
-  const vazio = {
-    ativas: { t: "Nenhuma locação ativa", d: "Registre a primeira locação." },
-    encerradas: { t: "Nenhuma locação encerrada", d: "Locações encerradas aparecem aqui." },
-    excluidas: {
-      t: "Nenhuma locação excluída",
-      d: "Locações que você excluir aparecem aqui e podem ser restauradas.",
-    },
-  }[filtro];
 
   return (
     <div className="flex flex-col gap-6">
@@ -93,8 +99,29 @@ export default async function LocacoesPage({
         </Link>
       </div>
 
-      {!locacoes?.length ? (
-        <EmptyState title={vazio.t} description={vazio.d} />
+      <form className="flex items-center gap-2">
+        {filtro !== "ativas" && <input type="hidden" name="filtro" value={filtro} />}
+        <Input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Buscar por imóvel, inquilino, valor, índice..."
+          className="max-w-md"
+        />
+      </form>
+
+      {!locacoes.length ? (
+        <EmptyState
+          title={termo ? "Nenhum resultado" : "Nenhuma locação aqui"}
+          description={
+            termo
+              ? `Nada encontrado para "${q}". Tente outro termo.`
+              : filtro === "excluidas"
+                ? "Locações que você excluir aparecem aqui e podem ser restauradas."
+                : filtro === "encerradas"
+                  ? "Locações encerradas aparecem aqui."
+                  : "Registre a primeira locação."
+          }
+        />
       ) : (
         <Table>
           <TableHeader>

@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { normalizarBusca, correspondeBusca } from "@/lib/utils/search";
 import { desarquivarImovel } from "./actions";
 
 export default async function ImoveisPage({
@@ -26,11 +27,21 @@ export default async function ImoveisPage({
   const supabase = await createClient();
 
   let query = supabase.from("imoveis").select("*").order("nome");
-  query = vendoArquivados
-    ? query.not("deleted_at", "is", null)
-    : query.is("deleted_at", null);
-  if (q) query = query.ilike("nome", `%${q}%`);
-  const { data: imoveis } = await query;
+  query = vendoArquivados ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
+  const { data } = await query;
+
+  const termo = normalizarBusca(q ?? "");
+  const imoveis = (data ?? []).filter((im) =>
+    correspondeBusca(termo, [
+      im.nome,
+      im.endereco,
+      im.matricula,
+      im.inscricao_imobiliaria,
+      im.dic,
+      im.metragem_m2,
+      im.status === "ocupado" ? "ocupado" : "vago",
+    ]),
+  );
 
   const aba = (ativo: boolean) =>
     cn(
@@ -66,18 +77,20 @@ export default async function ImoveisPage({
         <Input
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Buscar por nome..."
-          className="max-w-xs"
+          placeholder="Buscar por nome, endereço, matrícula, inscrição, DIC..."
+          className="max-w-md"
         />
       </form>
 
-      {!imoveis?.length ? (
+      {!imoveis.length ? (
         <EmptyState
-          title={vendoArquivados ? "Nenhum imóvel arquivado" : "Nenhum imóvel encontrado"}
+          title={termo ? "Nenhum resultado" : vendoArquivados ? "Nenhum imóvel arquivado" : "Nenhum imóvel encontrado"}
           description={
-            vendoArquivados
-              ? "Imóveis que você arquivar aparecem aqui e podem ser restaurados."
-              : "Comece cadastrando o primeiro imóvel."
+            termo
+              ? `Nada encontrado para "${q}". Tente outro termo.`
+              : vendoArquivados
+                ? "Imóveis que você arquivar aparecem aqui e podem ser restaurados."
+                : "Comece cadastrando o primeiro imóvel."
           }
         />
       ) : (
@@ -87,6 +100,7 @@ export default async function ImoveisPage({
               <TableHead>Nome</TableHead>
               <TableHead>Endereço</TableHead>
               <TableHead>Matrícula</TableHead>
+              <TableHead>Inscrição imob.</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">{vendoArquivados ? "Ação" : "Docs"}</TableHead>
             </TableRow>
@@ -110,6 +124,9 @@ export default async function ImoveisPage({
                   </TableCell>
                   <TableCell className="text-muted-foreground">{im.endereco || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{im.matricula || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {im.inscricao_imobiliaria || "—"}
+                  </TableCell>
                   <TableCell>
                     {vendoArquivados ? (
                       <Badge variant="muted">Arquivado</Badge>
