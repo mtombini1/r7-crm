@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/domain/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBRL, formatDate } from "@/lib/utils/format";
 import { ArquivosTab } from "@/components/domain/arquivos-tab";
 import { ARQUIVOS_BUCKET } from "@/lib/supabase/storage";
+import {
+  competenciaAtual,
+  competenciaAnterior,
+  competenciaLabel,
+  mesesNoIntervalo,
+} from "@/lib/aluguel/meses";
 import { encerrarLocacao } from "../actions";
+import { marcarAluguelPago, desmarcarAluguelPago } from "../aluguel-actions";
 
 export default async function LocacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,6 +56,18 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
     }),
   );
 
+  // Controle de aluguel mensal (check rápido).
+  const compAtual = competenciaAtual();
+  const mesAnterior = competenciaAnterior(compAtual);
+  const { data: pagamentos } = await supabase
+    .from("aluguel_pagamentos")
+    .select("competencia")
+    .eq("locacao_id", id);
+  const pagos = new Set((pagamentos ?? []).map((p) => p.competencia));
+  const pagoMesAtual = pagos.has(compAtual);
+  const desde = locacao.controle_aluguel_desde ?? compAtual;
+  const mesesAtraso = mesesNoIntervalo(desde, mesAnterior).filter((m) => !pagos.has(m));
+
   async function encerrar() {
     "use server";
     await encerrarLocacao(id);
@@ -83,6 +103,81 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
       <Badge variant={locacao.status === "ativa" ? "success" : "muted"}>
         {locacao.status === "ativa" ? "Ativa" : "Encerrada"}
       </Badge>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Aluguel (mensal)</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Mês atual — {competenciaLabel(compAtual)}</span>
+              <span className="text-xs text-muted-foreground">
+                {formatBRL(locacao.valor_aluguel)}
+              </span>
+            </div>
+            {pagoMesAtual ? (
+              <form
+                action={async () => {
+                  "use server";
+                  await desmarcarAluguelPago(id, compAtual);
+                }}
+              >
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-success hover:text-muted-foreground"
+                  title="Pago — clique para desfazer"
+                >
+                  <Check className="h-4 w-4" /> Pago
+                </Button>
+              </form>
+            ) : (
+              <form
+                action={async () => {
+                  "use server";
+                  await marcarAluguelPago(id, compAtual, locacao.valor_aluguel);
+                }}
+              >
+                <Button type="submit" size="sm">
+                  Marcar pago
+                </Button>
+              </form>
+            )}
+          </div>
+
+          <div className="border-t pt-3">
+            <span className="text-sm font-medium">Em atraso</span>
+            {mesesAtraso.length === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">Nenhum mês em atraso. 🎉</p>
+            ) : (
+              <ul className="mt-2 flex flex-col gap-2">
+                {mesesAtraso.map((mes) => (
+                  <li key={mes} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Badge variant="destructive">{competenciaLabel(mes)}</Badge>
+                      <span className="text-muted-foreground">
+                        {formatBRL(locacao.valor_aluguel)}
+                      </span>
+                    </div>
+                    <form
+                      action={async () => {
+                        "use server";
+                        await marcarAluguelPago(id, mes, locacao.valor_aluguel);
+                      }}
+                    >
+                      <Button type="submit" variant="outline" size="sm">
+                        Marcar pago
+                      </Button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

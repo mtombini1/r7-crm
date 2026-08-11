@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Trash2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/domain/page-header";
 import { EmptyState } from "@/components/domain/empty-state";
@@ -10,6 +10,12 @@ import { formatBRL, formatDate } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { normalizarBusca, correspondeBusca } from "@/lib/utils/search";
 import {
+  competenciaAtual,
+  competenciaAnterior,
+  competenciaLabel,
+  mesesNoIntervalo,
+} from "@/lib/aluguel/meses";
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { arquivarLocacao, desarquivarLocacao } from "./actions";
+import { marcarAluguelPago, desmarcarAluguelPago } from "./aluguel-actions";
 
 type Filtro = "ativas" | "encerradas" | "excluidas";
 
@@ -66,6 +73,34 @@ export default async function LocacoesPage({
       l.status === "ativa" ? "ativa" : "encerrada",
     ]),
   );
+
+  // Status do aluguel mensal (check rápido) — só na aba Ativas.
+  const mostrarAluguel = filtro === "ativas";
+  const compAtual = competenciaAtual();
+  const compAtualLabel = competenciaLabel(compAtual);
+  const mesAnterior = competenciaAnterior(compAtual);
+  const pagoMesAtual = new Set<string>();
+  const atrasoPorLocacao = new Map<string, number>();
+  if (mostrarAluguel && locacoes.length) {
+    const ids = locacoes.map((l) => l.id);
+    const { data: pagamentos } = await supabase
+      .from("aluguel_pagamentos")
+      .select("locacao_id, competencia")
+      .in("locacao_id", ids);
+    const pagosPorLoc = new Map<string, Set<string>>();
+    for (const p of pagamentos ?? []) {
+      const set = pagosPorLoc.get(p.locacao_id) ?? new Set<string>();
+      set.add(p.competencia);
+      pagosPorLoc.set(p.locacao_id, set);
+    }
+    for (const l of locacoes) {
+      const pagos = pagosPorLoc.get(l.id) ?? new Set<string>();
+      if (pagos.has(compAtual)) pagoMesAtual.add(l.id);
+      const desde = l.controle_aluguel_desde ?? compAtual;
+      const atras = mesesNoIntervalo(desde, mesAnterior).filter((m) => !pagos.has(m)).length;
+      if (atras > 0) atrasoPorLocacao.set(l.id, atras);
+    }
+  }
 
   const aba = (ativo: boolean) =>
     cn(
@@ -130,6 +165,7 @@ export default async function LocacoesPage({
               <TableHead>Inquilino</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Status</TableHead>
+              {mostrarAluguel && <TableHead>Aluguel {compAtualLabel}</TableHead>}
               <TableHead>Reajuste</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -158,6 +194,48 @@ export default async function LocacoesPage({
                     {loc.status === "ativa" ? "Ativa" : "Encerrada"}
                   </Badge>
                 </TableCell>
+                {mostrarAluguel && (
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {pagoMesAtual.has(loc.id) ? (
+                        <form
+                          action={async () => {
+                            "use server";
+                            await desmarcarAluguelPago(loc.id, compAtual);
+                          }}
+                        >
+                          <Button
+                            type="submit"
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1 text-success hover:text-muted-foreground"
+                            title="Pago — clique para desfazer"
+                          >
+                            <Check className="h-4 w-4" /> Pago
+                          </Button>
+                        </form>
+                      ) : (
+                        <form
+                          action={async () => {
+                            "use server";
+                            await marcarAluguelPago(loc.id, compAtual, loc.valor_aluguel);
+                          }}
+                        >
+                          <Button type="submit" variant="outline" size="sm">
+                            Marcar pago
+                          </Button>
+                        </form>
+                      )}
+                      {atrasoPorLocacao.has(loc.id) && (
+                        <Link href={`/locacoes/${loc.id}`} title="Ver meses em atraso">
+                          <Badge variant="destructive">
+                            {atrasoPorLocacao.get(loc.id)} em atraso
+                          </Badge>
+                        </Link>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
                 <TableCell className="text-muted-foreground">
                   {formatDate(loc.data_reajuste)}
                 </TableCell>

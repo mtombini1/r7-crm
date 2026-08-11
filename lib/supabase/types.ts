@@ -42,6 +42,26 @@ export type Database = {
         };
         Relationships: [];
       };
+      aluguel_pagamentos: {
+        Row: {
+          competencia: string;
+          id: string;
+          locacao_id: string;
+          pago_em: string;
+          pago_por: string | null;
+          valor: number | null;
+        };
+        Insert: {
+          competencia: string;
+          locacao_id: string;
+          id?: string;
+          pago_em?: string;
+          pago_por?: string | null;
+          valor?: number | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["aluguel_pagamentos"]["Insert"]>;
+        Relationships: [];
+      };
       arquivos: {
         Row: {
           created_at: string;
@@ -264,6 +284,7 @@ export type Database = {
           data_renovacao: string | null;
           data_troca_desconto: string | null;
           deleted_at: string | null;
+          controle_aluguel_desde: string | null;
           dia_vencimento: number | null;
           id: string;
           imovel_id: string;
@@ -288,6 +309,7 @@ export type Database = {
           data_troca_desconto?: string | null;
           observacoes?: string | null;
           deleted_at?: string | null;
+          controle_aluguel_desde?: string | null;
           dia_vencimento?: number | null;
           id?: string;
           indice_correcao?: string | null;
