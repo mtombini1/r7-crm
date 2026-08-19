@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { formatBRL, formatDate, hojeISO } from "@/lib/utils/format";
 import { competenciaLabel } from "@/lib/financeiro/competencias";
-import { alugueisEmAtraso } from "@/lib/aluguel/meses";
+import { alugueisEmAtraso, diasDeAtraso } from "@/lib/aluguel/meses";
 
 const TIPO_LABEL: Record<string, string> = {
   aluguel: "Aluguel",
@@ -24,20 +24,22 @@ const TIPO_LABEL: Record<string, string> = {
 
 type Linha = {
   key: string;
-  locacaoId: string | null;
+  href: string | null;
   imovelId: string | null;
+  inquilinoId: string | null;
   tipo: string | null;
   competencia: string | null;
   valor: number | null;
   dataVencimento: string | null;
   diasEmAtraso: number;
+  encerrada: boolean;
 };
 
 export async function Pendencias() {
   const supabase = await createClient();
   const hoje = hojeISO();
 
-  // 1) Aluguéis vencidos e não pagos (check rápido mensal) — fonte principal do aluguel.
+  // 1) Aluguéis vencidos e não pagos de locações ATIVAS (check rápido mensal).
   const { data: locacoes } = await supabase
     .from("locacoes")
     .select("id, imovel_id, inquilino_id, valor_aluguel, dia_vencimento, controle_aluguel_desde")
@@ -66,19 +68,40 @@ export async function Pendencias() {
     for (const a of alugueisEmAtraso(desde, l.dia_vencimento, pagos, hoje)) {
       linhasAluguel.push({
         key: `al-${l.id}-${a.competencia}`,
-        locacaoId: l.id,
+        href: `/locacoes/${l.id}`,
         imovelId: l.imovel_id,
+        inquilinoId: l.inquilino_id,
         tipo: "aluguel",
         competencia: a.competencia,
         valor: l.valor_aluguel,
         dataVencimento: a.vencimento,
         diasEmAtraso: a.diasEmAtraso,
+        encerrada: false,
       });
     }
   }
 
-  // 2) Outros vencimentos do Financeiro detalhado (IPTU, condomínio, ambiental).
-  //    Aluguel já vem do check acima, então excluímos para não duplicar.
+  // 2) Débitos de locações ENCERRADAS ainda não quitados — continuam cobrando.
+  const { data: debitos } = await supabase
+    .from("debitos_encerramento")
+    .select("id, inquilino_id, imovel_id, competencia, valor, vencimento")
+    .is("quitado_em", null);
+
+  const linhasDebito: Linha[] = (debitos ?? []).map((d) => ({
+    key: `deb-${d.id}`,
+    href: `/inquilinos/${d.inquilino_id}`,
+    imovelId: d.imovel_id,
+    inquilinoId: d.inquilino_id,
+    tipo: "aluguel",
+    competencia: d.competencia,
+    valor: d.valor,
+    dataVencimento: d.vencimento,
+    diasEmAtraso: d.vencimento ? diasDeAtraso(d.vencimento, hoje) : 0,
+    encerrada: true,
+  }));
+
+  // 3) Outros vencimentos do Financeiro detalhado (IPTU, condomínio, ambiental).
+  //    Aluguel já vem dos itens acima, então excluímos para não duplicar.
   const { data: alertas } = await supabase
     .from("vw_alertas_financeiros_pendentes")
     .select("*")
@@ -86,25 +109,29 @@ export async function Pendencias() {
 
   const linhasFinanceiro: Linha[] = (alertas ?? []).map((l) => ({
     key: `fin-${l.lancamento_id ?? `${l.locacao_id}-${l.competencia}`}`,
-    locacaoId: l.locacao_id ?? null,
+    href: l.locacao_id ? `/locacoes/${l.locacao_id}` : null,
     imovelId: l.imovel_id ?? null,
+    inquilinoId: null,
     tipo: l.tipo ?? null,
     competencia: l.competencia ?? null,
     valor: l.valor ?? null,
     dataVencimento: l.data_vencimento ?? null,
     diasEmAtraso: l.dias_em_atraso ?? 0,
+    encerrada: false,
   }));
 
-  const linhas = [...linhasAluguel, ...linhasFinanceiro].sort(
+  const linhas = [...linhasAluguel, ...linhasDebito, ...linhasFinanceiro].sort(
     (a, b) => b.diasEmAtraso - a.diasEmAtraso,
   );
 
-  // Resolve nomes de imóvel e inquilino (por locação) via consultas separadas.
+  const totalAberto = linhas.reduce((s, l) => s + (l.valor ?? 0), 0);
+
+  // Resolve nomes de imóvel e inquilino via consultas separadas.
   const imovelIds = Array.from(
     new Set(linhas.map((l) => l.imovelId).filter((v): v is string => !!v)),
   );
   const inquilinoIds = Array.from(
-    new Set((locacoes ?? []).map((l) => l.inquilino_id).filter((v): v is string => !!v)),
+    new Set(linhas.map((l) => l.inquilinoId).filter((v): v is string => !!v)),
   );
   const [{ data: imoveis }, { data: inquilinos }] = await Promise.all([
     imovelIds.length
@@ -115,17 +142,18 @@ export async function Pendencias() {
       : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
   ]);
   const nomePorImovel = new Map((imoveis ?? []).map((i) => [i.id, i.nome]));
-  const nomeInqPorLocacao = new Map(
-    (locacoes ?? []).map((l) => [
-      l.id,
-      (inquilinos ?? []).find((i) => i.id === l.inquilino_id)?.nome ?? null,
-    ]),
-  );
+  const nomePorInquilino = new Map((inquilinos ?? []).map((i) => [i.id, i.nome]));
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>Vencimentos em atraso</CardTitle>
+        {linhas.length > 0 && (
+          <span className="text-sm font-medium text-destructive">
+            {formatBRL(totalAberto)} · {linhas.length}{" "}
+            {linhas.length === 1 ? "pendência" : "pendências"}
+          </span>
+        )}
       </CardHeader>
       <CardContent>
         {linhas.length === 0 ? (
@@ -144,16 +172,13 @@ export async function Pendencias() {
             </TableHeader>
             <TableBody>
               {linhas.map((l) => {
-                const inquilino = l.locacaoId ? nomeInqPorLocacao.get(l.locacaoId) : null;
                 const nomeImovel = (l.imovelId && nomePorImovel.get(l.imovelId)) ?? "—";
+                const inquilino = l.inquilinoId ? nomePorInquilino.get(l.inquilinoId) : null;
                 return (
                   <TableRow key={l.key}>
                     <TableCell>
-                      {l.locacaoId ? (
-                        <Link
-                          href={`/locacoes/${l.locacaoId}`}
-                          className="text-primary hover:underline"
-                        >
+                      {l.href ? (
+                        <Link href={l.href} className="text-primary hover:underline">
                           {nomeImovel}
                         </Link>
                       ) : (
@@ -161,6 +186,11 @@ export async function Pendencias() {
                       )}
                       {inquilino ? (
                         <span className="block text-xs text-muted-foreground">{inquilino}</span>
+                      ) : null}
+                      {l.encerrada ? (
+                        <Badge variant="muted" className="mt-1">
+                          Contrato encerrado
+                        </Badge>
                       ) : null}
                     </TableCell>
                     <TableCell>{(l.tipo && TIPO_LABEL[l.tipo]) ?? l.tipo ?? "—"}</TableCell>

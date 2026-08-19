@@ -118,6 +118,36 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["audit_log"]["Insert"]>;
         Relationships: [];
       };
+      debitos_encerramento: {
+        Row: {
+          competencia: string;
+          id: string;
+          imovel_id: string | null;
+          inquilino_id: string;
+          locacao_id: string;
+          quitado_em: string | null;
+          quitado_por: string | null;
+          registrado_em: string;
+          registrado_por: string | null;
+          valor: number | null;
+          vencimento: string | null;
+        };
+        Insert: {
+          competencia: string;
+          inquilino_id: string;
+          locacao_id: string;
+          id?: string;
+          imovel_id?: string | null;
+          quitado_em?: string | null;
+          quitado_por?: string | null;
+          registrado_em?: string;
+          registrado_por?: string | null;
+          valor?: number | null;
+          vencimento?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["debitos_encerramento"]["Insert"]>;
+        Relationships: [];
+      };
       imoveis: {
         Row: {
           created_at: string;

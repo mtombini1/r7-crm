@@ -49,6 +49,11 @@ export function vencimentoDaCompetencia(competencia: string, diaVencimento: numb
   return format(new Date(base.getFullYear(), base.getMonth(), dia), "yyyy-MM-dd");
 }
 
+/** Dias de atraso entre um vencimento (yyyy-MM-dd) e hoje (yyyy-MM-dd). Nunca negativo. */
+export function diasDeAtraso(vencimento: string, hoje: string): number {
+  return Math.max(0, differenceInCalendarDays(parseISO(hoje), parseISO(vencimento)));
+}
+
 export type AluguelAtraso = {
   competencia: string;
   vencimento: string;
@@ -68,11 +73,7 @@ export function alugueisEmAtraso(
     if (pagos.has(competencia)) continue;
     const vencimento = vencimentoDaCompetencia(competencia, diaVencimento);
     if (vencimento <= hoje) {
-      out.push({
-        competencia,
-        vencimento,
-        diasEmAtraso: differenceInCalendarDays(parseISO(hoje), parseISO(vencimento)),
-      });
+      out.push({ competencia, vencimento, diasEmAtraso: diasDeAtraso(vencimento, hoje) });
     }
   }
   return out;

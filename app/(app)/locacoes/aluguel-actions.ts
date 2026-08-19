@@ -34,3 +34,26 @@ export async function desmarcarAluguelPago(
   revalidatePath("/locacoes");
   revalidatePath(`/locacoes/${locacaoId}`);
 }
+
+/** Marca um débito de encerramento como quitado (mantém o histórico). */
+export async function quitarDebito(debitoId: string, inquilinoId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  await supabase
+    .from("debitos_encerramento")
+    .update({ quitado_em: new Date().toISOString(), quitado_por: userData.user?.id ?? null })
+    .eq("id", debitoId);
+  revalidatePath("/dashboard");
+  revalidatePath(`/inquilinos/${inquilinoId}`);
+}
+
+/** Reabre um débito quitado (desfaz a quitação). */
+export async function reabrirDebito(debitoId: string, inquilinoId: string): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from("debitos_encerramento")
+    .update({ quitado_em: null, quitado_por: null })
+    .eq("id", debitoId);
+  revalidatePath("/dashboard");
+  revalidatePath(`/inquilinos/${inquilinoId}`);
+}

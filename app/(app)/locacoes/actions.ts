@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { locacaoSchema } from "@/lib/validation/locacao";
 import { hojeISO } from "@/lib/utils/format";
+import { alugueisEmAtraso } from "@/lib/aluguel/meses";
 
 export async function criarLocacao(raw: unknown): Promise<{ error: string } | void> {
   const parsed = locacaoSchema.safeParse(raw);
@@ -36,11 +37,46 @@ export async function atualizarLocacao(
 
 export async function encerrarLocacao(id: string): Promise<void> {
   const supabase = await createClient();
+  const hoje = hojeISO();
+
+  // Antes de encerrar, registra os aluguéis vencidos e não pagos como débitos do
+  // inquilino — assim continuam visíveis (painel + cartão) até serem quitados.
+  const { data: loc } = await supabase
+    .from("locacoes")
+    .select("id, inquilino_id, imovel_id, valor_aluguel, dia_vencimento, controle_aluguel_desde")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (loc) {
+    const { data: pagamentos } = await supabase
+      .from("aluguel_pagamentos")
+      .select("competencia")
+      .eq("locacao_id", id);
+    const pagos = new Set((pagamentos ?? []).map((p) => p.competencia));
+    const desde = loc.controle_aluguel_desde ?? hoje;
+    const atrasos = alugueisEmAtraso(desde, loc.dia_vencimento, pagos, hoje);
+    if (atrasos.length) {
+      await supabase.from("debitos_encerramento").upsert(
+        atrasos.map((a) => ({
+          inquilino_id: loc.inquilino_id,
+          locacao_id: loc.id,
+          imovel_id: loc.imovel_id,
+          competencia: a.competencia,
+          valor: loc.valor_aluguel,
+          vencimento: a.vencimento,
+        })),
+        { onConflict: "locacao_id,competencia", ignoreDuplicates: true },
+      );
+    }
+  }
+
   await supabase
     .from("locacoes")
-    .update({ status: "encerrada", data_fim: hojeISO() })
+    .update({ status: "encerrada", data_fim: hoje })
     .eq("id", id);
   revalidatePath("/locacoes");
+  revalidatePath("/dashboard");
+  if (loc?.inquilino_id) revalidatePath(`/inquilinos/${loc.inquilino_id}`);
   redirect("/locacoes");
 }
 

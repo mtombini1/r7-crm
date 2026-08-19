@@ -64,6 +64,8 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
   const atrasos = alugueisEmAtraso(desde, locacao.dia_vencimento, pagos, hoje);
   const atualVencido = atrasos.find((a) => a.competencia === compAtual) ?? null;
   const mesesAtraso = atrasos.filter((a) => a.competencia !== compAtual);
+  const qtdAberto = atrasos.length;
+  const totalAberto = qtdAberto * (locacao.valor_aluguel ?? 0);
 
   async function encerrar() {
     "use server";
@@ -102,8 +104,14 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
       </Badge>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Aluguel (mensal)</CardTitle>
+          {qtdAberto > 0 && (
+            <span className="text-sm font-medium text-destructive">
+              Em aberto: {formatBRL(totalAberto)} · {qtdAberto}{" "}
+              {qtdAberto === 1 ? "mês" : "meses"}
+            </span>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
