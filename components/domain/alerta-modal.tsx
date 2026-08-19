@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,8 +158,12 @@ export function AlertaModal({
   contratuais: AlertaContratual[];
   financeiros: AlertaFinanceiro[];
 }) {
-  // Some quando não há nenhum alerta pendente.
+  // Estado local: fechar adia os alertas até recarregar / novo acesso.
+  const [dispensado, setDispensado] = useState(false);
+
+  // Some quando não há nenhum alerta pendente, ou quando o usuário adiou.
   if (contratuais.length === 0 && financeiros.length === 0) return null;
+  if (dispensado) return null;
 
   const bloqueante = contratuais.length > 0;
 
@@ -170,15 +175,26 @@ export function AlertaModal({
       aria-labelledby="alerta-modal-titulo"
     >
       <div className="my-auto flex w-full max-w-lg flex-col gap-4 rounded-xl border border-border bg-background p-6 shadow-lg">
-        <div className="flex flex-col gap-1">
-          <h2 id="alerta-modal-titulo" className="text-lg font-semibold">
-            Alertas pendentes
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {bloqueante
-              ? "Resolva os alertas contratuais abaixo para continuar."
-              : "Pendências financeiras informativas."}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h2 id="alerta-modal-titulo" className="text-lg font-semibold">
+              Alertas pendentes
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {bloqueante
+                ? "Resolva os alertas abaixo, ou feche no X para adiar."
+                : "Pendências financeiras informativas."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDispensado(true)}
+            aria-label="Fechar e adiar"
+            title="Adiar para depois"
+            className="-mr-1.5 -mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {contratuais.length > 0 && (
