@@ -6,15 +6,10 @@ import { PageHeader } from "@/components/domain/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatBRL, formatDate } from "@/lib/utils/format";
+import { formatBRL, formatDate, hojeISO } from "@/lib/utils/format";
 import { ArquivosTab } from "@/components/domain/arquivos-tab";
 import { ARQUIVOS_BUCKET } from "@/lib/supabase/storage";
-import {
-  competenciaAtual,
-  competenciaAnterior,
-  competenciaLabel,
-  mesesNoIntervalo,
-} from "@/lib/aluguel/meses";
+import { competenciaAtual, competenciaLabel, alugueisEmAtraso } from "@/lib/aluguel/meses";
 import { encerrarLocacao } from "../actions";
 import { marcarAluguelPago, desmarcarAluguelPago } from "../aluguel-actions";
 
@@ -58,7 +53,7 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
 
   // Controle de aluguel mensal (check rápido).
   const compAtual = competenciaAtual();
-  const mesAnterior = competenciaAnterior(compAtual);
+  const hoje = hojeISO();
   const { data: pagamentos } = await supabase
     .from("aluguel_pagamentos")
     .select("competencia")
@@ -66,7 +61,9 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
   const pagos = new Set((pagamentos ?? []).map((p) => p.competencia));
   const pagoMesAtual = pagos.has(compAtual);
   const desde = locacao.controle_aluguel_desde ?? compAtual;
-  const mesesAtraso = mesesNoIntervalo(desde, mesAnterior).filter((m) => !pagos.has(m));
+  const atrasos = alugueisEmAtraso(desde, locacao.dia_vencimento, pagos, hoje);
+  const atualVencido = atrasos.find((a) => a.competencia === compAtual) ?? null;
+  const mesesAtraso = atrasos.filter((a) => a.competencia !== compAtual);
 
   async function encerrar() {
     "use server";
@@ -114,6 +111,13 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
               <span className="text-sm font-medium">Mês atual — {competenciaLabel(compAtual)}</span>
               <span className="text-xs text-muted-foreground">
                 {formatBRL(locacao.valor_aluguel)}
+                {atualVencido && (
+                  <span className="ml-2 text-destructive">
+                    Vencido há {atualVencido.diasEmAtraso}{" "}
+                    {atualVencido.diasEmAtraso === 1 ? "dia" : "dias"} (venc.{" "}
+                    {formatDate(atualVencido.vencimento)})
+                  </span>
+                )}
               </span>
             </div>
             {pagoMesAtual ? (
@@ -154,17 +158,24 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
             ) : (
               <ul className="mt-2 flex flex-col gap-2">
                 {mesesAtraso.map((mes) => (
-                  <li key={mes} className="flex items-center justify-between gap-3">
+                  <li
+                    key={mes.competencia}
+                    className="flex items-center justify-between gap-3"
+                  >
                     <div className="flex items-center gap-2 text-sm">
-                      <Badge variant="destructive">{competenciaLabel(mes)}</Badge>
+                      <Badge variant="destructive">{competenciaLabel(mes.competencia)}</Badge>
                       <span className="text-muted-foreground">
                         {formatBRL(locacao.valor_aluguel)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        venc. {formatDate(mes.vencimento)} · {mes.diasEmAtraso}{" "}
+                        {mes.diasEmAtraso === 1 ? "dia" : "dias"}
                       </span>
                     </div>
                     <form
                       action={async () => {
                         "use server";
-                        await marcarAluguelPago(id, mes, locacao.valor_aluguel);
+                        await marcarAluguelPago(id, mes.competencia, locacao.valor_aluguel);
                       }}
                     >
                       <Button type="submit" variant="outline" size="sm">

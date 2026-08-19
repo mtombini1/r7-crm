@@ -1,5 +1,12 @@
 import { formatInTimeZone } from "date-fns-tz";
-import { addMonths, parseISO, isAfter, format } from "date-fns";
+import {
+  addMonths,
+  parseISO,
+  isAfter,
+  format,
+  lastDayOfMonth,
+  differenceInCalendarDays,
+} from "date-fns";
 
 const TZ = "America/Sao_Paulo";
 
@@ -30,4 +37,43 @@ export function mesesNoIntervalo(desde: string, ate: string): string[] {
 /** Rótulo MM/yyyy de uma competência (yyyy-MM-dd). */
 export function competenciaLabel(iso: string): string {
   return format(parseISO(iso), "MM/yyyy");
+}
+
+/** Data de vencimento (yyyy-MM-dd) do aluguel de uma competência, dado o dia de
+ *  vencimento. Sem dia definido, usa o último dia do mês; o dia é limitado ao
+ *  tamanho do mês (ex.: dia 31 em fevereiro vira o último dia). */
+export function vencimentoDaCompetencia(competencia: string, diaVencimento: number | null): string {
+  const base = parseISO(competencia);
+  const ultimoDia = lastDayOfMonth(base).getDate();
+  const dia = diaVencimento == null ? ultimoDia : Math.min(Math.max(diaVencimento, 1), ultimoDia);
+  return format(new Date(base.getFullYear(), base.getMonth(), dia), "yyyy-MM-dd");
+}
+
+export type AluguelAtraso = {
+  competencia: string;
+  vencimento: string;
+  diasEmAtraso: number;
+};
+
+/** Competências de uma locação já vencidas (vencimento <= hoje) e sem pagamento.
+ *  Inclui o mês atual quando o dia de vencimento já passou. */
+export function alugueisEmAtraso(
+  desde: string,
+  diaVencimento: number | null,
+  pagos: Set<string>,
+  hoje: string,
+): AluguelAtraso[] {
+  const out: AluguelAtraso[] = [];
+  for (const competencia of mesesNoIntervalo(desde, competenciaAtual())) {
+    if (pagos.has(competencia)) continue;
+    const vencimento = vencimentoDaCompetencia(competencia, diaVencimento);
+    if (vencimento <= hoje) {
+      out.push({
+        competencia,
+        vencimento,
+        diasEmAtraso: differenceInCalendarDays(parseISO(hoje), parseISO(vencimento)),
+      });
+    }
+  }
+  return out;
 }

@@ -6,15 +6,10 @@ import { EmptyState } from "@/components/domain/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { formatBRL, formatDate } from "@/lib/utils/format";
+import { formatBRL, formatDate, hojeISO } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { normalizarBusca, correspondeBusca } from "@/lib/utils/search";
-import {
-  competenciaAtual,
-  competenciaAnterior,
-  competenciaLabel,
-  mesesNoIntervalo,
-} from "@/lib/aluguel/meses";
+import { competenciaAtual, competenciaLabel, alugueisEmAtraso } from "@/lib/aluguel/meses";
 import {
   Table,
   TableBody,
@@ -76,9 +71,9 @@ export default async function LocacoesPage({
 
   // Status do aluguel mensal (check rápido) — só na aba Ativas.
   const mostrarAluguel = filtro === "ativas";
+  const hoje = hojeISO();
   const compAtual = competenciaAtual();
   const compAtualLabel = competenciaLabel(compAtual);
-  const mesAnterior = competenciaAnterior(compAtual);
   const pagoMesAtual = new Set<string>();
   const atrasoPorLocacao = new Map<string, number>();
   if (mostrarAluguel && locacoes.length) {
@@ -97,7 +92,7 @@ export default async function LocacoesPage({
       const pagos = pagosPorLoc.get(l.id) ?? new Set<string>();
       if (pagos.has(compAtual)) pagoMesAtual.add(l.id);
       const desde = l.controle_aluguel_desde ?? compAtual;
-      const atras = mesesNoIntervalo(desde, mesAnterior).filter((m) => !pagos.has(m)).length;
+      const atras = alugueisEmAtraso(desde, l.dia_vencimento, pagos, hoje).length;
       if (atras > 0) atrasoPorLocacao.set(l.id, atras);
     }
   }
