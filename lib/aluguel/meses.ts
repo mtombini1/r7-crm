@@ -60,8 +60,9 @@ export type AluguelAtraso = {
   diasEmAtraso: number;
 };
 
-/** Competências de uma locação já vencidas (vencimento <= hoje) e sem pagamento.
- *  Inclui o mês atual quando o dia de vencimento já passou. */
+/** Competências de uma locação em atraso e sem pagamento. Só a partir do DIA
+ *  SEGUINTE ao vencimento (vencimento < hoje) — no dia do vencimento a pessoa
+ *  ainda tem o dia todo para pagar, então não conta como atraso. */
 export function alugueisEmAtraso(
   desde: string,
   diaVencimento: number | null,
@@ -72,7 +73,7 @@ export function alugueisEmAtraso(
   for (const competencia of mesesNoIntervalo(desde, competenciaAtual())) {
     if (pagos.has(competencia)) continue;
     const vencimento = vencimentoDaCompetencia(competencia, diaVencimento);
-    if (vencimento <= hoje) {
+    if (vencimento < hoje) {
       out.push({ competencia, vencimento, diasEmAtraso: diasDeAtraso(vencimento, hoje) });
     }
   }
