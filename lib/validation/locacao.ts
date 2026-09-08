@@ -12,8 +12,8 @@ export const locacaoSchema = z.object({
   dia_vencimento: z.coerce
     .number()
     .int()
-    .min(1, "Dia de vencimento entre 1 e 28")
-    .max(28, "Dia de vencimento entre 1 e 28")
+    .min(1, "Dia de vencimento entre 1 e 30")
+    .max(30, "Dia de vencimento entre 1 e 30")
     .nullable()
     .optional(),
   observacoes: z.string().trim().nullable().optional(),

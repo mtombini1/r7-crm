@@ -119,12 +119,12 @@ export function LocacaoForm({
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dia_vencimento">Dia de vencimento (1-28)</Label>
+            <Label htmlFor="dia_vencimento">Dia de vencimento (1-30)</Label>
             <Input
               id="dia_vencimento"
               type="number"
               min="1"
-              max="28"
+              max="30"
               {...register("dia_vencimento")}
             />
           </div>
