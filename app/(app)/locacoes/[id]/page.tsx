@@ -10,7 +10,7 @@ import { formatBRL, formatDate, hojeISO } from "@/lib/utils/format";
 import { ArquivosTab } from "@/components/domain/arquivos-tab";
 import { ARQUIVOS_BUCKET } from "@/lib/supabase/storage";
 import { competenciaAtual, competenciaLabel, alugueisEmAtraso } from "@/lib/aluguel/meses";
-import { encerrarLocacao } from "../actions";
+import { encerrarLocacao, reativarLocacao } from "../actions";
 import { marcarAluguelPago, desmarcarAluguelPago } from "../aluguel-actions";
 
 export default async function LocacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -72,6 +72,11 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
     await encerrarLocacao(id);
   }
 
+  async function reativar() {
+    "use server";
+    await reativarLocacao(id);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -88,10 +93,16 @@ export default async function LocacaoDetailPage({ params }: { params: Promise<{ 
             >
               Editar
             </Link>
-            {locacao.status === "ativa" && (
+            {locacao.status === "ativa" ? (
               <form action={encerrar}>
                 <Button type="submit" variant="destructive">
                   Encerrar
+                </Button>
+              </form>
+            ) : (
+              <form action={reativar}>
+                <Button type="submit" variant="outline">
+                  Reativar
                 </Button>
               </form>
             )}

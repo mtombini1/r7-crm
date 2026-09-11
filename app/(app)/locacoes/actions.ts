@@ -80,6 +80,46 @@ export async function encerrarLocacao(id: string): Promise<void> {
   redirect("/locacoes");
 }
 
+/**
+ * Reativa uma locação encerrada (desfaz o encerramento). Os débitos gerados no
+ * encerramento que já foram quitados viram pagamento do aluguel (para o check
+ * mensal enxergar como pago); os demais são removidos e o check recalcula o
+ * atraso normalmente. Nenhum pagamento já existente é perdido.
+ */
+export async function reativarLocacao(id: string): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: loc } = await supabase
+    .from("locacoes")
+    .select("id, inquilino_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { data: debitos } = await supabase
+    .from("debitos_encerramento")
+    .select("competencia, valor, quitado_em")
+    .eq("locacao_id", id);
+
+  const quitados = (debitos ?? []).filter((d) => d.quitado_em);
+  if (quitados.length) {
+    await supabase.from("aluguel_pagamentos").upsert(
+      quitados.map((d) => ({ locacao_id: id, competencia: d.competencia, valor: d.valor })),
+      { onConflict: "locacao_id,competencia", ignoreDuplicates: true },
+    );
+  }
+  if ((debitos ?? []).length) {
+    await supabase.from("debitos_encerramento").delete().eq("locacao_id", id);
+  }
+
+  await supabase.from("locacoes").update({ status: "ativa", data_fim: null }).eq("id", id);
+
+  revalidatePath("/locacoes");
+  revalidatePath("/dashboard");
+  revalidatePath(`/locacoes/${id}`);
+  if (loc?.inquilino_id) revalidatePath(`/inquilinos/${loc.inquilino_id}`);
+  redirect(`/locacoes/${id}`);
+}
+
 /** "Excluir" da lista: soft-delete (preserva histórico/arquivos; restaurável). */
 export async function arquivarLocacao(id: string): Promise<void> {
   const supabase = await createClient();
