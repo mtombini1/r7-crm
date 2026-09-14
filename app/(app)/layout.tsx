@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/domain/logout-button";
 import { AlertaModal } from "@/components/domain/alerta-modal";
 import { getAlertasPendentes } from "@/lib/alertas/queries";
+import type { AlertaContratual, AlertaFinanceiro } from "@/lib/alertas/queries";
 
 const nav = [
   { href: "/dashboard", label: "Painel" },
@@ -20,7 +22,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { contratuais, financeiros } = await getAlertasPendentes();
+  // Alertas são buscados só uma vez por sessão: o modal marca o cookie
+  // "alertas_checados" ao aparecer; enquanto ele existir, pulamos a busca (mais
+  // rápido em cada navegação). O logout limpa o cookie para reaparecer no próximo acesso.
+  const cookieStore = await cookies();
+  const jaChecouAlertas = cookieStore.has("alertas_checados");
+  const { contratuais, financeiros } = jaChecouAlertas
+    ? { contratuais: [] as AlertaContratual[], financeiros: [] as AlertaFinanceiro[] }
+    : await getAlertasPendentes();
 
   return (
     <div className="min-h-screen">
@@ -47,7 +56,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-      <AlertaModal contratuais={contratuais} financeiros={financeiros} />
+      {!jaChecouAlertas && (
+        <AlertaModal contratuais={contratuais} financeiros={financeiros} />
+      )}
     </div>
   );
 }

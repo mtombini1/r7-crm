@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -160,6 +160,13 @@ export function AlertaModal({
 }) {
   // Estado local: fechar adia os alertas até recarregar / novo acesso.
   const [dispensado, setDispensado] = useState(false);
+
+  // Marca que os alertas já foram verificados nesta sessão. A partir daí o
+  // layout deixa de buscá-los em cada navegação (mais rápido), até um novo login
+  // limpar o cookie. Roda mesmo sem alertas, para pular a busca de qualquer forma.
+  useEffect(() => {
+    document.cookie = "alertas_checados=1; path=/; SameSite=Lax";
+  }, []);
 
   // Some quando não há nenhum alerta pendente, ou quando o usuário adiou.
   if (contratuais.length === 0 && financeiros.length === 0) return null;

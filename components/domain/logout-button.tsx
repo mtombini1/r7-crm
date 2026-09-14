@@ -10,6 +10,8 @@ export function LogoutButton() {
   async function logout() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Reseta o marcador para que os alertas reapareçam no próximo acesso.
+    document.cookie = "alertas_checados=; Max-Age=0; path=/";
     router.push("/login");
     router.refresh();
   }
