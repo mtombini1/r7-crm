@@ -159,6 +159,7 @@ export default async function LocacoesPage({
               <TableHead>Imóvel</TableHead>
               <TableHead>Inquilino</TableHead>
               <TableHead>Valor</TableHead>
+              <TableHead>Vencimento</TableHead>
               <TableHead>Status</TableHead>
               {mostrarAluguel && <TableHead>Aluguel {compAtualLabel}</TableHead>}
               <TableHead>Reajuste</TableHead>
@@ -184,6 +185,9 @@ export default async function LocacoesPage({
                   {inquilinoById.get(loc.inquilino_id) ?? "—"}
                 </TableCell>
                 <TableCell>{formatBRL(loc.valor_aluguel)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {loc.dia_vencimento ? `Dia ${loc.dia_vencimento}` : "—"}
+                </TableCell>
                 <TableCell>
                   <Badge variant={loc.status === "ativa" ? "success" : "muted"}>
                     {loc.status === "ativa" ? "Ativa" : "Encerrada"}
