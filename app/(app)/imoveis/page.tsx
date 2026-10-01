@@ -39,6 +39,13 @@ export default async function ImoveisPage({
       im.inscricao_imobiliaria,
       im.dic,
       im.metragem_m2,
+      // Campos da vaga de garagem — assim buscar pelo DIC/inscrição/matrícula da
+      // vaga encontra o imóvel ao qual ela pertence.
+      im.vaga_dic,
+      im.vaga_inscricao_imobiliaria,
+      im.vaga_matricula,
+      im.vaga_quantidade,
+      im.observacoes,
       im.status === "ocupado" ? "ocupado" : "vago",
     ]),
   );
