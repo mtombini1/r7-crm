@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -20,7 +20,13 @@ const tipoFinanceiroLabel: Record<string, string> = {
   ambiental: "Ambiental",
 };
 
-function ContratualCard({ alerta }: { alerta: AlertaContratual }) {
+function ContratualCard({
+  alerta,
+  onAcao,
+}: {
+  alerta: AlertaContratual;
+  onAcao?: () => void;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [novoValor, setNovoValor] = useState("");
@@ -40,6 +46,7 @@ function ContratualCard({ alerta }: { alerta: AlertaContratual }) {
         return;
       }
       router.refresh();
+      onAcao?.();
     });
   }
 
@@ -54,6 +61,7 @@ function ContratualCard({ alerta }: { alerta: AlertaContratual }) {
         return;
       }
       router.refresh();
+      onAcao?.();
     });
   }
 
@@ -101,12 +109,7 @@ function ContratualCard({ alerta }: { alerta: AlertaContratual }) {
       ) : (
         <div className="flex flex-col gap-2">
           {error && <p className="text-xs text-destructive">{error}</p>}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={confirmarCiente}
-            disabled={isPending}
-          >
+          <Button type="button" variant="outline" onClick={confirmarCiente} disabled={isPending}>
             {isPending ? "Salvando..." : "Ciente"}
           </Button>
         </div>
@@ -151,28 +154,23 @@ function FinanceiroItem({ alerta }: { alerta: AlertaFinanceiro }) {
   );
 }
 
-export function AlertaModal({
+/**
+ * Painel (modal) de alertas pendentes. Usado tanto na abertura automática (1x por
+ * sessão) quanto ao clicar no sino. `onFechar` fecha; `onAcao` é chamado após
+ * reconhecer um alerta, para o pai recarregar a lista.
+ */
+export function PainelAlertas({
   contratuais,
   financeiros,
+  onFechar,
+  onAcao,
 }: {
   contratuais: AlertaContratual[];
   financeiros: AlertaFinanceiro[];
+  onFechar: () => void;
+  onAcao?: () => void;
 }) {
-  // Estado local: fechar adia os alertas até recarregar / novo acesso.
-  const [dispensado, setDispensado] = useState(false);
-
-  // Marca que os alertas já foram verificados nesta sessão. A partir daí o
-  // layout deixa de buscá-los em cada navegação (mais rápido), até um novo login
-  // limpar o cookie. Roda mesmo sem alertas, para pular a busca de qualquer forma.
-  useEffect(() => {
-    document.cookie = "alertas_checados=1; path=/; SameSite=Lax";
-  }, []);
-
-  // Some quando não há nenhum alerta pendente, ou quando o usuário adiou.
-  if (contratuais.length === 0 && financeiros.length === 0) return null;
-  if (dispensado) return null;
-
-  const bloqueante = contratuais.length > 0;
+  const vazio = contratuais.length === 0 && financeiros.length === 0;
 
   return (
     <div
@@ -188,21 +186,27 @@ export function AlertaModal({
               Alertas pendentes
             </h2>
             <p className="text-sm text-muted-foreground">
-              {bloqueante
-                ? "Resolva os alertas abaixo, ou feche no X para adiar."
-                : "Pendências financeiras informativas."}
+              {vazio
+                ? "Tudo em dia por aqui."
+                : "Resolva os alertas abaixo, ou feche para ver depois."}
             </p>
           </div>
           <button
             type="button"
-            onClick={() => setDispensado(true)}
-            aria-label="Fechar e adiar"
-            title="Adiar para depois"
+            onClick={onFechar}
+            aria-label="Fechar"
+            title="Fechar"
             className="-mr-1.5 -mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {vazio && (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Nenhuma pendência no momento. 🎉
+          </p>
+        )}
 
         {contratuais.length > 0 && (
           <div className="flex flex-col gap-3">
@@ -210,7 +214,11 @@ export function AlertaModal({
               Contratuais
             </span>
             {contratuais.map((a) => (
-              <ContratualCard key={`${a.locacaoId}-${a.tipo}-${a.dataAlvo}`} alerta={a} />
+              <ContratualCard
+                key={`${a.locacaoId}-${a.tipo}-${a.dataAlvo}`}
+                alerta={a}
+                onAcao={onAcao}
+              />
             ))}
           </div>
         )}
