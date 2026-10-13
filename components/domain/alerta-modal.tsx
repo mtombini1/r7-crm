@@ -183,7 +183,7 @@ export function PainelAlertas({
     >
       <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-background shadow-lg">
         {/* Cabeçalho fixo */}
-        <div className="flex items-start justify-between gap-3 border-b border-border p-6 pb-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border p-6 pb-4">
           <div className="flex flex-col gap-1">
             <h2 id="alerta-modal-titulo" className="text-lg font-semibold">
               Alertas pendentes {total > 0 && `(${total})`}
@@ -206,7 +206,7 @@ export function PainelAlertas({
         </div>
 
         {/* Corpo rolável */}
-        <div className="flex flex-col gap-4 overflow-y-auto p-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
           {vazio && (
             <p className="py-6 text-center text-sm text-muted-foreground">
               Nenhuma pendência no momento. 🎉
