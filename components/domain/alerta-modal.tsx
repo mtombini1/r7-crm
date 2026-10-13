@@ -172,18 +172,21 @@ export function PainelAlertas({
 }) {
   const vazio = contratuais.length === 0 && financeiros.length === 0;
 
+  const total = contratuais.length + financeiros.length;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/40 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="alerta-modal-titulo"
     >
-      <div className="my-auto flex w-full max-w-lg flex-col gap-4 rounded-xl border border-border bg-background p-6 shadow-lg">
-        <div className="flex items-start justify-between gap-3">
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-background shadow-lg">
+        {/* Cabeçalho fixo */}
+        <div className="flex items-start justify-between gap-3 border-b border-border p-6 pb-4">
           <div className="flex flex-col gap-1">
             <h2 id="alerta-modal-titulo" className="text-lg font-semibold">
-              Alertas pendentes
+              Alertas pendentes {total > 0 && `(${total})`}
             </h2>
             <p className="text-sm text-muted-foreground">
               {vazio
@@ -202,37 +205,40 @@ export function PainelAlertas({
           </button>
         </div>
 
-        {vazio && (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Nenhuma pendência no momento. 🎉
-          </p>
-        )}
+        {/* Corpo rolável */}
+        <div className="flex flex-col gap-4 overflow-y-auto p-6">
+          {vazio && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Nenhuma pendência no momento. 🎉
+            </p>
+          )}
 
-        {contratuais.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Contratuais
-            </span>
-            {contratuais.map((a) => (
-              <ContratualCard
-                key={`${a.locacaoId}-${a.tipo}-${a.dataAlvo}`}
-                alerta={a}
-                onAcao={onAcao}
-              />
-            ))}
-          </div>
-        )}
+          {contratuais.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Contratuais
+              </span>
+              {contratuais.map((a) => (
+                <ContratualCard
+                  key={`${a.locacaoId}-${a.tipo}-${a.dataAlvo}`}
+                  alerta={a}
+                  onAcao={onAcao}
+                />
+              ))}
+            </div>
+          )}
 
-        {financeiros.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Financeiros
-            </span>
-            {financeiros.map((a) => (
-              <FinanceiroItem key={a.lancamentoId} alerta={a} />
-            ))}
-          </div>
-        )}
+          {financeiros.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Financeiros
+              </span>
+              {financeiros.map((a) => (
+                <FinanceiroItem key={a.lancamentoId} alerta={a} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
