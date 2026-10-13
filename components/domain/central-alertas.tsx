@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
 import { PainelAlertas } from "./alerta-modal";
 import { buscarAlertasPendentes } from "@/app/(app)/alertas-actions";
@@ -19,10 +20,12 @@ export function CentralAlertas({ inicial }: { inicial: Dados | null }) {
     inicial != null && inicial.contratuais.length + inicial.financeiros.length > 0,
   );
   const [carregando, setCarregando] = useState(false);
+  const [montado, setMontado] = useState(false);
 
   // Marca a sessão como "alertas checados" → o layout deixa de buscá-los a cada
   // navegação (mais rápido). O logout limpa o cookie para reaparecer no próximo acesso.
   useEffect(() => {
+    setMontado(true);
     document.cookie = "alertas_checados=1; path=/; SameSite=Lax";
   }, []);
 
@@ -63,14 +66,20 @@ export function CentralAlertas({ inicial }: { inicial: Dados | null }) {
           </span>
         )}
       </button>
-      {aberto && dados && (
-        <PainelAlertas
-          contratuais={dados.contratuais}
-          financeiros={dados.financeiros}
-          onFechar={() => setAberto(false)}
-          onAcao={recarregar}
-        />
-      )}
+      {/* Portal para o body: evita que o header (com backdrop-blur) vire o
+          contêiner de referência do position:fixed e quebre o posicionamento. */}
+      {montado &&
+        aberto &&
+        dados &&
+        createPortal(
+          <PainelAlertas
+            contratuais={dados.contratuais}
+            financeiros={dados.financeiros}
+            onFechar={() => setAberto(false)}
+            onAcao={recarregar}
+          />,
+          document.body,
+        )}
     </>
   );
 }
